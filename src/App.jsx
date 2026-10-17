@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Web Audio API Sound Controller
 class SoundController {
   constructor() {
     this.ctx = null;
@@ -23,21 +22,21 @@ class SoundController {
     osc.start();
     osc.stop(this.ctx.currentTime + duration);
   }
-  move() { this.playTone(300, 'sine', 0.08, 0.05); }
+  move() { this.playTone(350, 'sine', 0.08, 0.05); }
   collect() {
     if (!this.ctx) return;
-    this.playTone(600, 'triangle', 0.1, 0.08);
-    setTimeout(() => this.playTone(900, 'triangle', 0.15, 0.08), 50);
+    this.playTone(700, 'triangle', 0.1, 0.1);
+    setTimeout(() => this.playTone(1100, 'triangle', 0.15, 0.1), 50);
   }
   powerup() {
     if (!this.ctx) return;
-    this.playTone(400, 'sawtooth', 0.1, 0.1);
-    setTimeout(() => this.playTone(800, 'sawtooth', 0.2, 0.1), 80);
+    this.playTone(500, 'sawtooth', 0.1, 0.12);
+    setTimeout(() => this.playTone(1000, 'sawtooth', 0.2, 0.12), 80);
   }
   crash() {
     if (!this.ctx) return;
-    this.playTone(100, 'sawtooth', 0.4, 0.2);
-    this.playTone(60, 'square', 0.5, 0.25);
+    this.playTone(120, 'sawtooth', 0.4, 0.3);
+    this.playTone(50, 'square', 0.5, 0.35);
   }
 }
 
@@ -46,7 +45,7 @@ const audio = new SoundController();
 export default function App() {
   const canvasRef = useRef(null);
 
-  const [gameState, setGameState] = useState('START'); // 'START', 'PLAYING', 'GAMEOVER'
+  const [gameState, setGameState] = useState('START');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(() => localStorage.getItem('cyberdash_hi') || 0);
   const [multiplier, setMultiplier] = useState(1);
@@ -56,7 +55,7 @@ export default function App() {
   const stateRef = useRef({
     lane: 1,
     playerX: 0,
-    speed: 6,
+    speed: 7,
     score: 0,
     multiplier: 1,
     consecutiveOrbs: 0,
@@ -99,7 +98,7 @@ export default function App() {
     stateRef.current = {
       lane: 1,
       playerX: 0,
-      speed: 6,
+      speed: 7,
       score: 0,
       multiplier: 1,
       consecutiveOrbs: 0,
@@ -119,14 +118,14 @@ export default function App() {
   };
 
   const createExplosion = (x, y, color) => {
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 25; i++) {
       stateRef.current.particles.push({
         x, y,
-        vx: (Math.random() - 0.5) * 8,
-        vy: (Math.random() - 0.5) * 8,
+        vx: (Math.random() - 0.5) * 10,
+        vy: (Math.random() - 0.5) * 10,
         color,
         life: 1,
-        decay: Math.random() * 0.05 + 0.02
+        decay: Math.random() * 0.04 + 0.02
       });
     }
   };
@@ -150,16 +149,14 @@ export default function App() {
     let animationFrameId;
 
     const resize = () => {
-      if (canvas.clientWidth && canvas.clientHeight) {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-      }
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
     resize();
     window.addEventListener('resize', resize);
 
     const getLaneX = (lIndex, W) => {
-      const roadWidth = W * 0.7;
+      const roadWidth = Math.min(W * 0.6, 500);
       const laneWidth = roadWidth / 3;
       const startX = (W - roadWidth) / 2;
       return startX + lIndex * laneWidth + laneWidth / 2;
@@ -169,22 +166,22 @@ export default function App() {
       const state = stateRef.current;
       if (!state.gameActive) return;
 
-      const W = canvas.width || 800;
-      const H = canvas.height || 900;
+      const W = canvas.width;
+      const H = canvas.height;
 
       const targetX = getLaneX(state.lane, W);
-      state.playerX += (targetX - state.playerX) * 0.2;
+      state.playerX += (targetX - state.playerX) * 0.25;
 
       let currentSpeed = state.speed;
       if (state.hyperTime > 0) {
         state.hyperTime--;
-        currentSpeed *= 2;
-        state.score += 2;
+        currentSpeed *= 2.2;
+        state.score += 3;
       } else {
         state.score += 1;
       }
 
-      state.speed += 0.001;
+      state.speed += 0.0015;
       if (state.shieldTime > 0) state.shieldTime--;
 
       setScore(state.score);
@@ -192,39 +189,39 @@ export default function App() {
       setShieldTime(state.shieldTime);
       setHyperTime(state.hyperTime);
 
-      state.roadOffset = (state.roadOffset + currentSpeed) % 40;
+      state.roadOffset = (state.roadOffset + currentSpeed) % 50;
 
       state.spawnTimer++;
-      if (state.spawnTimer % Math.max(20, Math.floor(60 - state.speed * 3)) === 0) {
+      if (state.spawnTimer % Math.max(18, Math.floor(55 - state.speed * 2.5)) === 0) {
         const laneIdx = Math.floor(Math.random() * 3);
         const rand = Math.random();
         let type = 'obstacle';
-        if (rand > 0.6) type = 'orb';
-        if (rand > 0.92) type = 'shield';
-        if (rand > 0.96) type = 'hyper';
-        state.objects.push({ lane: laneIdx, y: -50, type });
+        if (rand > 0.55) type = 'orb';
+        if (rand > 0.90) type = 'shield';
+        if (rand > 0.95) type = 'hyper';
+        state.objects.push({ lane: laneIdx, y: -60, type });
       }
 
       for (let i = state.objects.length - 1; i >= 0; i--) {
         const obj = state.objects[i];
         obj.y += currentSpeed;
         const objX = getLaneX(obj.lane, W);
-        const playerY = H - 120;
+        const playerY = H - 140;
 
-        if (Math.abs(obj.y - playerY) < 35 && obj.lane === state.lane) {
+        if (Math.abs(obj.y - playerY) < 40 && obj.lane === state.lane) {
           if (obj.type === 'obstacle') {
             if (state.hyperTime > 0) {
-              createExplosion(objX, obj.y, '#ff007f');
+              createExplosion(objX, obj.y, '#f43f5e');
               state.objects.splice(i, 1);
               continue;
             } else if (state.shieldTime > 0) {
               state.shieldTime = 0;
-              createExplosion(objX, obj.y, '#00f3ff');
+              createExplosion(objX, obj.y, '#38bdf8');
               audio.powerup();
               state.objects.splice(i, 1);
               continue;
             } else {
-              createExplosion(state.playerX, H - 120, '#ff007f');
+              createExplosion(state.playerX, H - 140, '#f43f5e');
               handleGameOver();
               return;
             }
@@ -235,25 +232,25 @@ export default function App() {
               state.multiplier *= 2;
             }
             state.score += 50 * state.multiplier;
-            createExplosion(objX, obj.y, '#ffe600');
+            createExplosion(objX, obj.y, '#facc15');
             state.objects.splice(i, 1);
             continue;
           } else if (obj.type === 'shield') {
             audio.powerup();
             state.shieldTime = 300;
-            createExplosion(objX, obj.y, '#00f3ff');
+            createExplosion(objX, obj.y, '#38bdf8');
             state.objects.splice(i, 1);
             continue;
           } else if (obj.type === 'hyper') {
             audio.powerup();
-            state.hyperTime = 200;
-            createExplosion(objX, obj.y, '#ff007f');
+            state.hyperTime = 220;
+            createExplosion(objX, obj.y, '#f43f5e');
             state.objects.splice(i, 1);
             continue;
           }
         }
 
-        if (obj.y > H + 50) {
+        if (obj.y > H + 60) {
           if (obj.type === 'orb') state.consecutiveOrbs = 0;
           state.objects.splice(i, 1);
         }
@@ -267,17 +264,25 @@ export default function App() {
         if (p.life <= 0) state.particles.splice(i, 1);
       }
 
-      ctx.fillStyle = '#08090f';
+      // Background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+      bgGrad.addColorStop(0, '#090d16');
+      bgGrad.addColorStop(1, '#1e1b4b');
+      ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, W, H);
 
-      const roadWidthTop = W * 0.2;
-      const roadWidthBottom = W * 0.8;
+      // Road
+      const roadWidthTop = W * 0.15;
+      const roadWidthBottom = Math.min(W * 0.6, 500);
       const roadLeftTop = (W - roadWidthTop) / 2;
       const roadRightTop = roadLeftTop + roadWidthTop;
       const roadLeftBottom = (W - roadWidthBottom) / 2;
       const roadRightBottom = roadLeftBottom + roadWidthBottom;
 
-      ctx.fillStyle = '#0d0f1a';
+      const roadGrad = ctx.createLinearGradient(0, 0, 0, H);
+      roadGrad.addColorStop(0, '#111827');
+      roadGrad.addColorStop(1, '#030712');
+      ctx.fillStyle = roadGrad;
       ctx.beginPath();
       ctx.moveTo(roadLeftTop, 0);
       ctx.lineTo(roadRightTop, 0);
@@ -286,10 +291,11 @@ export default function App() {
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = '#00f3ff';
-      ctx.lineWidth = 4;
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#00f3ff';
+      // Neon road edges
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 6;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#38bdf8';
       ctx.beginPath();
       ctx.moveTo(roadLeftTop, 0);
       ctx.lineTo(roadLeftBottom, H);
@@ -297,78 +303,83 @@ export default function App() {
       ctx.lineTo(roadRightBottom, H);
       ctx.stroke();
 
-      ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
-      ctx.lineWidth = 1;
-      for (let y = state.roadOffset; y < H; y += 40) {
+      // Grid lines
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 5;
+      for (let y = state.roadOffset; y < H; y += 50) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(W, y);
         ctx.stroke();
       }
 
+      // Objects
       state.objects.forEach(obj => {
         const x = getLaneX(obj.lane, W);
+        ctx.shadowBlur = 25;
         if (obj.type === 'obstacle') {
-          ctx.fillStyle = '#ff007f';
-          ctx.shadowColor = '#ff007f';
-          ctx.shadowBlur = 20;
-          ctx.fillRect(x - 20, obj.y - 15, 40, 30);
+          ctx.fillStyle = '#f43f5e';
+          ctx.shadowColor = '#f43f5e';
+          ctx.fillRect(x - 25, obj.y - 18, 50, 36);
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x - 25, obj.y - 18, 50, 36);
         } else if (obj.type === 'orb') {
-          ctx.fillStyle = '#ffe600';
-          ctx.shadowColor = '#ffe600';
-          ctx.shadowBlur = 15;
-          ctx.beginPath();
-          ctx.arc(x, obj.y, 12, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (obj.type === 'shield') {
-          ctx.fillStyle = '#00f3ff';
-          ctx.shadowColor = '#00f3ff';
-          ctx.shadowBlur = 15;
+          ctx.fillStyle = '#facc15';
+          ctx.shadowColor = '#facc15';
           ctx.beginPath();
           ctx.arc(x, obj.y, 14, 0, Math.PI * 2);
           ctx.fill();
-        } else if (obj.type === 'hyper') {
-          ctx.fillStyle = '#ff007f';
-          ctx.shadowColor = '#ff007f';
-          ctx.shadowBlur = 20;
+        } else if (obj.type === 'shield') {
+          ctx.fillStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
           ctx.beginPath();
           ctx.arc(x, obj.y, 16, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (obj.type === 'hyper') {
+          ctx.fillStyle = '#ec4899';
+          ctx.shadowColor = '#ec4899';
+          ctx.beginPath();
+          ctx.arc(x, obj.y, 18, 0, Math.PI * 2);
           ctx.fill();
         }
       });
 
+      // Particles
       state.particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 12;
         ctx.globalAlpha = p.life;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1.0;
       });
 
-      const pY = H - 120;
+      // Player Ship
+      const pY = H - 140;
       ctx.save();
       ctx.translate(state.playerX, pY);
-      ctx.shadowColor = state.hyperTime > 0 ? '#ff007f' : '#00f3ff';
-      ctx.shadowBlur = state.hyperTime > 0 ? 30 : 20;
-      ctx.fillStyle = state.hyperTime > 0 ? '#ff007f' : '#00f3ff';
+      ctx.shadowColor = state.hyperTime > 0 ? '#ec4899' : '#38bdf8';
+      ctx.shadowBlur = state.hyperTime > 0 ? 35 : 25;
+      ctx.fillStyle = state.hyperTime > 0 ? '#ec4899' : '#38bdf8';
 
       ctx.beginPath();
-      ctx.moveTo(0, -25);
-      ctx.lineTo(20, 20);
-      ctx.lineTo(0, 10);
-      ctx.lineTo(-20, 20);
+      ctx.moveTo(0, -30);
+      ctx.lineTo(24, 24);
+      ctx.lineTo(0, 12);
+      ctx.lineTo(-24, 24);
       ctx.closePath();
       ctx.fill();
 
       if (state.shieldTime > 0) {
-        ctx.strokeStyle = '#00f3ff';
-        ctx.lineWidth = 3;
-        ctx.shadowBlur = 25;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 4;
+        ctx.shadowBlur = 30;
         ctx.beginPath();
-        ctx.arc(0, 0, 35, 0, Math.PI * 2);
+        ctx.arc(0, 0, 42, 0, Math.PI * 2);
         ctx.stroke();
       }
       ctx.restore();
@@ -384,69 +395,203 @@ export default function App() {
   }, [gameState]);
 
   return (
-    <div className="w-screen h-screen bg-[#08090f] text-white select-none overflow-hidden flex justify-center items-center font-['Rajdhani']">
-      <div className="relative w-[800px] h-[900px] max-w-full max-h-full bg-[radial-gradient(circle_at_center,#141729_0%,#08090f_100%)] shadow-[0_0_50px_rgba(0,243,255,0.15)] flex flex-col overflow-hidden">
-        
-        {/* HUD */}
-        <div className="absolute top-5 left-5 right-5 flex justify-between items-start pointer-events-none z-10">
-          <div className="bg-[#10121b]/75 backdrop-blur-md border border-[#00f3ff]/20 rounded-xl px-5 py-3 shadow-lg">
-            <div className="text-xs text-slate-400 tracking-widest uppercase">Score</div>
-            <div className="font-['Orbitron'] text-2xl font-bold text-[#00f3ff] drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]">{score}</div>
-          </div>
-          <div className="bg-[#10121b]/75 backdrop-blur-md border border-[#00f3ff]/20 rounded-xl px-5 py-3 shadow-lg text-right">
-            <div className="text-xs text-slate-400 tracking-widest uppercase">High Score</div>
-            <div className="font-['Orbitron'] text-2xl font-bold text-[#ff007f] drop-shadow-[0_0_10px_rgba(255,0,127,0.5)]">{highScore}</div>
-          </div>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: '#030712',
+      color: '#ffffff',
+      fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+      overflow: 'hidden',
+      userSelect: 'none'
+    }}>
+      <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'block', zIndex: 1 }} />
+
+      {/* HUD Score Header */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        right: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 10,
+        pointerEvents: 'none'
+      }}>
+        <div style={{
+          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          border: '1px solid rgba(56, 189, 248, 0.4)',
+          borderRadius: '12px',
+          padding: '10px 20px',
+          boxShadow: '0 0 15px rgba(56, 189, 248, 0.3)'
+        }}>
+          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', tracking: '1px' }}>Score</div>
+          <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#38bdf8', textShadow: '0 0 10px #38bdf8' }}>{score}</div>
         </div>
 
-        <div className="absolute top-24 left-5 font-['Orbitron'] text-xl font-black text-[#ffe600] drop-shadow-[0_0_10px_rgba(255,230,0,0.6)] z-10">{multiplier}x</div>
-
-        <div className="absolute top-24 right-5 w-36 flex flex-col gap-2 z-10">
-          <div>
-            <div className="text-[11px] font-bold tracking-wider uppercase text-[#00f3ff]">Shield</div>
-            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-[#00f3ff] shadow-[0_0_8px_#00f3ff] transition-all duration-100" style={{ width: `${(shieldTime / 300) * 100}%` }} />
-            </div>
-          </div>
-          <div>
-            <div className="text-[11px] font-bold tracking-wider uppercase text-[#ff007f]">Hyperdrive</div>
-            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-[#ff007f] shadow-[0_0_8px_#ff007f] transition-all duration-100" style={{ width: `${(hyperTime / 200) * 100}%` }} />
-            </div>
-          </div>
+        <div style={{
+          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          border: '1px solid rgba(244, 63, 94, 0.4)',
+          borderRadius: '12px',
+          padding: '10px 20px',
+          textAlign: 'right',
+          boxShadow: '0 0 15px rgba(244, 63, 94, 0.3)'
+        }}>
+          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase' }}>High Score</div>
+          <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#f43f5e', textShadow: '0 0 10px #f43f5e' }}>{highScore}</div>
         </div>
-
-        {/* Canvas Wrapper */}
-        <div className="relative flex-1 w-full h-full">
-          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
-        </div>
-
-        {/* Mobile controls */}
-        <div className="absolute bottom-5 left-0 right-0 flex justify-between px-5 md:hidden z-10 pointer-events-none">
-          <button onClick={moveLeft} className="w-16 h-16 rounded-full bg-white/10 border border-[#00f3ff]/20 backdrop-blur-md text-[#00f3ff] text-2xl flex items-center justify-center pointer-events-auto active:scale-95">◄</button>
-          <button onClick={moveRight} className="w-16 h-16 rounded-full bg-white/10 border border-[#00f3ff]/20 backdrop-blur-md text-[#00f3ff] text-2xl flex items-center justify-center pointer-events-auto active:scale-95">►</button>
-        </div>
-
-        {gameState === 'START' && (
-          <div className="absolute inset-0 bg-[#08090f]/85 backdrop-blur-lg flex flex-col justify-center items-center z-20 gap-5 p-6 text-center">
-            <h1 className="font-['Orbitron'] text-4xl md:text-5xl font-black bg-gradient-to-r from-[#00f3ff] to-[#ff007f] bg-clip-text text-transparent tracking-widest drop-shadow-[0_0_30px_rgba(0,243,255,0.3)]">CYBER DASH</h1>
-            <p className="text-slate-400 text-sm md:text-base max-w-xs leading-relaxed">Dodge high-energy grid barriers and harvest cyber orbs along the neon highway!</p>
-            <button onClick={startGame} className="font-['Orbitron'] text-lg font-bold px-10 py-4 bg-gradient-to-r from-[#00f3ff] to-[#00a8ff] text-[#08090f] rounded-full shadow-[0_0_25px_rgba(0,243,255,0.4)] hover:scale-105 hover:shadow-[0_0_35px_rgba(0,243,255,0.7)] transition-all cursor-pointer">LAUNCH</button>
-            <div className="text-slate-500 text-xs flex gap-2 items-center">
-              <span>Use <kbd className="bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">◄</kbd> <kbd className="bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">►</kbd> or <kbd className="bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">A</kbd> <kbd className="bg-white/10 px-2 py-0.5 rounded text-slate-300 font-mono">D</kbd></span>
-            </div>
-          </div>
-        )}
-
-        {gameState === 'GAMEOVER' && (
-          <div className="absolute inset-0 bg-[#08090f]/85 backdrop-blur-lg flex flex-col justify-center items-center z-20 gap-5 p-6 text-center">
-            <h1 className="font-['Orbitron'] text-4xl md:text-5xl font-black bg-gradient-to-r from-[#ff007f] to-red-500 bg-clip-text text-transparent tracking-widest drop-shadow-[0_0_30px_rgba(255,0,127,0.3)]">SYSTEM CRASH</h1>
-            <p className="text-slate-300 text-lg">Final Score: <span className="text-[#00f3ff] font-bold">{score}</span></p>
-            <button onClick={startGame} className="font-['Orbitron'] text-lg font-bold px-10 py-4 bg-gradient-to-r from-[#00f3ff] to-[#00a8ff] text-[#08090f] rounded-full shadow-[0_0_25px_rgba(0,243,255,0.4)] hover:scale-105 hover:shadow-[0_0_35px_rgba(0,243,255,0.7)] transition-all cursor-pointer">REBOOT</button>
-          </div>
-        )}
-
       </div>
+
+      {/* Multiplier & Power Bars */}
+      <div style={{ position: 'absolute', top: '100px', left: '20px', zIndex: 10, fontSize: '22px', fontWeight: 'bold', color: '#facc15', textShadow: '0 0 10px #facc15' }}>
+        {multiplier}x MULTIPLIER
+      </div>
+
+      <div style={{ position: 'absolute', top: '100px', right: '20px', width: '160px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '4px' }}>SHIELD</div>
+          <div style={{ height: '8px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(56,189,248,0.3)' }}>
+            <div style={{ height: '100%', backgroundColor: '#38bdf8', width: `${(shieldTime / 300) * 100}%`, transition: 'width 0.1s linear' }}></div>
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#ec4899', marginBottom: '4px' }}>HYPERDRIVE</div>
+          <div style={{ height: '8px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(236,72,153,0.3)' }}>
+            <div style={{ height: '100%', backgroundColor: '#ec4899', width: `${(hyperTime / 220) * 100}%`, transition: 'width 0.1s linear' }}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Controls */}
+      <div style={{
+        position: 'absolute',
+        bottom: '30px',
+        left: '20px',
+        right: '20px',
+        display: 'flex',
+        justify: 'space-between',
+        zIndex: 10
+      }}>
+        <button onClick={moveLeft} style={{
+          width: '70px',
+          height: '70px',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          border: '2px solid #38bdf8',
+          color: '#38bdf8',
+          fontSize: '28px',
+          cursor: 'pointer',
+          boxShadow: '0 0 15px rgba(56, 189, 248, 0.4)'
+        }}>◄</button>
+
+        <button onClick={moveRight} style={{
+          width: '70px',
+          height: '70px',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          border: '2px solid #38bdf8',
+          color: '#38bdf8',
+          fontSize: '28px',
+          cursor: 'pointer',
+          boxShadow: '0 0 15px rgba(56, 189, 248, 0.4)'
+        }}>►</button>
+      </div>
+
+      {/* Start Overlay Modal */}
+      {gameState === 'START' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(3, 7, 18, 0.92)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 50,
+          textAlign: 'center',
+          padding: '20px'
+        }}>
+          <h1 style={{
+            fontSize: '52px',
+            fontWeight: '900',
+            background: 'linear-gradient(90deg, #38bdf8, #ec4899, #facc15)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            margin: '0 0 15px 0',
+            letterSpacing: '2px',
+            filter: 'drop-shadow(0 0 20px rgba(56, 189, 248, 0.5))'
+          }}>CYBER DASH</h1>
+          <p style={{ color: '#cbd5e1', maxWidth: '380px', fontSize: '16px', lineHeight: '1.6', marginBottom: '30px' }}>
+            Dodge neon barriers, collect golden cyber orbs, and activate hyperdrive upgrades along the highway!
+          </p>
+          <button onClick={startGame} style={{
+            fontSize: '18px',
+            fontWeight: 'bold',
+            padding: '16px 45px',
+            background: 'linear-gradient(90deg, #38bdf8, #2563eb)',
+            color: '#030712',
+            border: 'none',
+            borderRadius: '50px',
+            cursor: 'pointer',
+            boxShadow: '0 0 25px rgba(56, 189, 248, 0.7)',
+            transition: 'transform 0.2s'
+          }}>
+            START GAME
+          </button>
+          <div style={{ marginTop: '25px', color: '#64748b', fontSize: '13px' }}>
+            Controls: Use <span style={{ color: '#38bdf8' }}>◄ ►</span> or <span style={{ color: '#38bdf8' }}>A / D</span> keys
+          </div>
+        </div>
+      )}
+
+      {/* Game Over Modal */}
+      {gameState === 'GAMEOVER' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(3, 7, 18, 0.92)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 50,
+          textAlign: 'center',
+          padding: '20px'
+        }}>
+          <h1 style={{
+            fontSize: '52px',
+            fontWeight: '900',
+            color: '#f43f5e',
+            textShadow: '0 0 25px #f43f5e',
+            margin: '0 0 15px 0'
+          }}>SYSTEM CRASH</h1>
+          <p style={{ color: '#ffffff', fontSize: '22px', marginBottom: '30px' }}>
+            Final Score: <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{score}</span>
+          </p>
+          <button onClick={startGame} style={{
+            fontSize: '18px',
+            fontWeight: 'bold',
+            padding: '16px 45px',
+            background: 'linear-gradient(90deg, #38bdf8, #2563eb)',
+            color: '#030712',
+            border: 'none',
+            borderRadius: '50px',
+            cursor: 'pointer',
+            boxShadow: '0 0 25px rgba(56, 189, 248, 0.7)'
+          }}>
+            REBOOT SYSTEM
+          </button>
+        </div>
+      )}
     </div>
   );
 }
